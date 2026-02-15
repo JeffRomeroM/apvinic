@@ -7,7 +7,7 @@ import Publicidad from './components/Publicidad.vue';
   <div class="app">
     <!-- Menú fijo lateral o inferior -->
     <Menu />
-    <Publicidad />
+    <!-- <Publicidad /> -->
 
     <!-- Contenido principal -->
     <main class="content">

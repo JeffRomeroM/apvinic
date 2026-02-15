@@ -8,12 +8,12 @@
       <span class="label">Inicio</span>
     </RouterLink>
     <RouterLink to="/rutas" class="nav-item">
-      <Icon icon="mdi:bus" width="24" />
-      <span class="label">Rutas</span>
+      <Icon icon="mdi:travel" width="24" />
+      <span class="label">Servicios</span>
     </RouterLink>
     <RouterLink to="/taxis" class="nav-item">
-      <Icon icon="mdi:taxi" width="24" />
-      <span class="label">Taxis</span>
+      <Icon icon="mdi:favorite-border" width="24" />
+      <span class="label">Favoritos</span>
     </RouterLink>
     <RouterLink to="/perfil" class="nav-item">
       <Icon icon="mdi:account" width="24" />
