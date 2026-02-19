@@ -11,9 +11,13 @@
       <Icon icon="mdi:travel" width="24" />
       <span class="label">Servicios</span>
     </RouterLink>
-    <RouterLink to="/taxis" class="nav-item">
+    <RouterLink to="/favoritos" class="nav-item">
       <Icon icon="mdi:favorite-border" width="24" />
       <span class="label">Favoritos</span>
+    </RouterLink>
+    <RouterLink to="/lugares" class="nav-item">
+      <Icon icon="mdi:place" width="24" />
+      <span class="label">Lugares</span>
     </RouterLink>
     <RouterLink to="/perfil" class="nav-item">
       <Icon icon="mdi:account" width="24" />

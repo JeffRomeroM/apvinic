@@ -1,6 +1,5 @@
 <script setup>
 import Menu from './components/Menu.vue';
-import Publicidad from './components/Publicidad.vue';
 </script>
 
 <template>
@@ -22,9 +21,6 @@ import Publicidad from './components/Publicidad.vue';
   padding: 0;
   box-sizing: border-box;
 }
-
-
-
 
 body, html, #app {
   height: 100%;

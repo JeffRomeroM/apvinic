@@ -12,7 +12,7 @@
         <label>Nombre del Negocio / Cooperativa</label>
         <div class="input-wrapper">
           <span class="iconify" data-icon="solar:shop-bold-duotone"></span>
-          <input v-model="nombreNegocio" type="text" placeholder="Ej: Cotran R.L." required />
+          <input v-model="nombreNegocio" type="text" placeholder="Ej: Romero S.A." required />
         </div>
       </div>
 
@@ -130,13 +130,13 @@ const registrar = async () => {
   font-family: 'Inter', sans-serif;
 }
 
-.brand { text-align: center; margin-bottom: 1rem; color: #1e3a8a; }
+.brand { text-align: center; margin-bottom: 1rem; color: #d19a02; }
 .logo-icon { font-size: 3rem; }
 h1 { font-size: 1.2rem; font-weight: 800; margin-top: 0.5rem; text-transform: uppercase; }
-h2 { text-align: center; color: #64748b; font-size: 1rem; margin-bottom: 2rem; }
+h2 { text-align: center; color: #fdda78; font-size: 1rem; margin-bottom: 2rem; }
 
 .input-group { margin-bottom: 1.5rem; }
-.input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.5rem; }
+.input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: #d19a02; margin-bottom: 0.5rem; }
 
 .input-wrapper {
   display: flex; align-items: center; background: #f8fafc;
@@ -144,14 +144,14 @@ h2 { text-align: center; color: #64748b; font-size: 1rem; margin-bottom: 2rem; }
   transition: all 0.3s;
 }
 
-.input-wrapper:focus-within { border-color: #1e3a8a; background: white; }
+.input-wrapper:focus-within { border-color: #d19a02; background: white; }
 .input-wrapper .iconify { color: #94a3b8; font-size: 1.2rem; }
 .input-wrapper input {
   border: none; background: none; padding: 1rem; width: 100%; outline: none; font-size: 1rem;
 }
 
 .btn-register {
-  width: 100%; padding: 1.2rem; background: #1e3a8a; color: white;
+  width: 100%; padding: 1.2rem; background: #d19a02; color: white;
   border: none; border-radius: 1rem; font-weight: 700; font-size: 1rem;
   cursor: pointer; margin-top: 1rem; transition: 0.3s;
 }
@@ -161,8 +161,8 @@ h2 { text-align: center; color: #64748b; font-size: 1rem; margin-bottom: 2rem; }
 
 .error-msg { color: #ef4444; text-align: center; font-size: 0.85rem; margin-top: 1rem; font-weight: 600; }
 
-.login-footer { text-align: center; margin-top: 2rem; font-size: 0.9rem; color: #64748b; }
-.btn-link { background: none; border: none; color: #1e3a8a; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.login-footer { text-align: center; margin-top: 2rem; font-size: 0.9rem; color: #f7d67b; }
+.btn-link { background: none; border: none; color: #d19a02; font-weight: 700; text-decoration: underline; cursor: pointer; }
 
 /* Modal */
 .modal-overlay {
@@ -174,7 +174,7 @@ h2 { text-align: center; color: #64748b; font-size: 1rem; margin-bottom: 2rem; }
 }
 .success-icon { font-size: 4rem; color: #10b981; margin-bottom: 1rem; }
 .btn-modal {
-  width: 100%; padding: 1rem; background: #1e3a8a; color: white; border: none; border-radius: 1rem; font-weight: 700; margin-top: 1.5rem;
+  width: 100%; padding: 1rem; background: #d19a02; color: white; border: none; border-radius: 1rem; font-weight: 700; margin-top: 1.5rem;
 }
 
 .spin { animation: spin 1s linear infinite; }

@@ -11,7 +11,7 @@
         <input 
           v-model="email" 
           type="email" 
-          placeholder="tu@correo.com" 
+          placeholder="correo@correo.com" 
           required 
         />
       </div>
@@ -90,24 +90,24 @@ const handleLogin = async () => {
   font-family: 'Inter', sans-serif;
 }
 
-.brand { text-align: center; color: #1e3a8a; margin-bottom: 2rem; }
+.brand { text-align: center; color: #d19a02; margin-bottom: 2rem; }
 .brand h1 { font-size: 1.8rem; margin-top: 0.5rem; }
 
 .input-group { margin-bottom: 1.2rem; }
-.input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; }
+.input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #f7d883; margin-bottom: 0.5rem; }
 .input-group input {
   width: 100%; padding: 0.8rem; border: 1.5px solid #e2e8f0; border-radius: 10px; outline: none; transition: 0.3s;
 }
-.input-group input:focus { border-color: #1e3a8a; }
+.input-group input:focus { border-color: #d19a02; }
 
 .btn-login {
-  width: 100%; padding: 1rem; background: #1e3a8a; color: white;
+  width: 100%; padding: 1rem; background: #d19a02; color: white;
   border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s;
 }
-.btn-login:disabled { background: #94a3b8; }
+.btn-login:disabled { background: #eecf7b; }
 
 .error-msg { color: #dc2626; text-align: center; margin-top: 1rem; font-size: 0.9rem; font-weight: 600; }
 
-.footer { text-align: center; margin-top: 1.5rem; color: #64748b; font-size: 0.9rem; }
-.footer span { color: #1e3a8a; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.footer { text-align: center; margin-top: 1.5rem; color: #fdd76e; font-size: 0.9rem; }
+.footer span { color: #d19a02; font-weight: 700; cursor: pointer; text-decoration: underline; }
 </style>
