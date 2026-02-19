@@ -236,7 +236,7 @@ const handleFile = (e) => {
 };
 
 const guardarServicio = async () => {
-  if (!form.origen || !form.precio) return alert("Completá los campos básicos");
+  if (!form.origen ) return alert("Completá los campos básicos");
   loading.value = true;
   try {
     let url = tempImageUrl.value;
