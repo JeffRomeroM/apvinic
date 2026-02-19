@@ -22,20 +22,17 @@ import Menu from './components/Menu.vue';
   box-sizing: border-box;
 }
 
+/* ELIMINA height: 100% de aquí, solo deja width */
 body, html, #app {
-  height: 100%;
   width: 100%;
+  min-height: 100vh; /* Usa min-height en lugar de height */
 }
-/* main.css o App.vue <style> */
+
 body {
   background-color: white;
   color: black;
   transition: background-color 0.3s, color 0.3s;
-}
-
-.dark body {
-  background-color: #121212;
-  color: white;
+  overflow-x: hidden; /* Evita scroll horizontal innecesario */
 }
 
 .app {
@@ -43,23 +40,23 @@ body {
   min-height: 100vh;
 }
 
-/* Contenido principal */
 .content {
   flex: 1;
   padding: 1rem;
-  margin-left: 60px; /* espacio para menú lateral */
-
-  /* En móviles, elimina el margen izquierdo */
+  /* El margen izquierdo debe coincidir con el ancho fijo que pusimos al Menu (75px) */
+  margin-left: 75px; 
+  width: 100%;
 }
 
 @media (max-width: 640px) {
   .app {
-    flex-direction: column;
+    display: block; /* Cambia flex por block en móvil para evitar conflictos */
   }
 
   .content {
     margin-left: 0;
-    margin-bottom: 60px; /* espacio para menú inferior */
+    margin-bottom: 70px; /* Espacio para que el menú inferior no tape el contenido */
+    padding-top: 60px; /* ESPACIO PARA EL LOGO FLOTANTE */
   }
 }
 </style>
