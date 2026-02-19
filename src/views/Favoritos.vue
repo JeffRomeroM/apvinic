@@ -2,9 +2,7 @@
   <div class="fav-manager">
     <header class="manager-header">
       <div class="nav-top">
-        <button @click="router.back()" class="btn-back">
-          <Icon icon="solar:alt-arrow-left-outline" />
-        </button>
+       
         <h1>Mis Guardados</h1>
       </div>
 

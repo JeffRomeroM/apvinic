@@ -102,14 +102,14 @@ const categorias = [
   { id: 'todos', label: 'Todos', icon: 'solar:point-on-map-bold' },
   { id: 'restaurante', label: 'Comida', icon: 'solar:chef-hat-bold' },
   { id: 'hotel', label: 'Hoteles', icon: 'solar:bed-bold' },
-  { id: 'ocio', label: 'Ocio', icon: 'solar:palmtree-bold' },
+  { id: 'otros', label: 'Otros', icon: 'mdi:bird' },
 ];
 
 const lugares = ref([
   { id: 1, nombre: 'Asados El Cañón', categoria: 'restaurante', ubicacion: 'Estelí', rating: 4.8, precioRange: '$$', imagen: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500' },
   { id: 2, nombre: 'Hotel Los Pinos', categoria: 'hotel', ubicacion: 'Matagalpa', rating: 4.5, precioRange: '$$$', imagen: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500' },
   { id: 3, nombre: 'Café de la Montaña', categoria: 'restaurante', ubicacion: 'León', rating: 4.9, precioRange: '$', imagen: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500' },
-  { id: 4, nombre: 'Mirador El Crucero', categoria: 'ocio', ubicacion: 'Managua', rating: 4.7, precioRange: 'Gratis', imagen: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=500' }
+  { id: 4, nombre: 'Mirador El Crucero', categoria: 'Otros', ubicacion: 'Managua', rating: 4.7, precioRange: 'Gratis', imagen: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=500' }
 ]);
 
 const lugaresFiltrados = computed(() => {

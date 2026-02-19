@@ -16,45 +16,52 @@
     <div class="cards" v-if="rutasFiltradas.length">
       <div class="card" v-for="item in rutasFiltradas" :key="item.id">
         
-        <div class="card-image-container">
+        <div class="card-image-container" @click="imagenZoom = item.foto_url">
           <img :src="item.foto_url" class="ruta-img" alt="Unidad" />
           <div class="card-price">C$ {{ item.precio }}</div>
           
           <button @click.stop="toggleLike(item.id)" class="btn-heart">
-            <Icon 
-              :icon="esFavorito(item.id) ? 'solar:heart-bold' : 'solar:heart-linear'" 
-              :class="{ 'is-liked': esFavorito(item.id) }" 
-            />
+            <Icon :icon="esFavorito(item.id) ? 'solar:heart-bold' : 'solar:heart-linear'" :class="{ 'is-liked': esFavorito(item.id) }" />
           </button>
         </div>
 
-        <div class="card-header">
-          <h2>
-            {{ item.origen }} <span v-if="item.destino">→ {{ item.destino }}</span>
-            <span class="empresa-label">{{ item.nombre || 'Transporte Independiente' }}</span>
-          </h2>
-        </div>
+        <div class="card-content">
+          <div class="biz-header">
+            <span class="empresa-name">Transporte {{ item.nombre_negocio }}</span>
+            <span class="type-tag">Bus</span>
+          </div>
 
-        <div class="card-body">
-          <div class="badge-row">
-            <span :class="['type-tag', item.tipo]">{{ item.tipo }}</span>
+          <h2 class="ruta-title">
+            {{ item.origen }} 
+            <Icon icon="solar:alt-arrow-right-outline" class="arrow" v-if="item.destino" /> 
+            {{ item.destino }}
+          </h2>
+
+          <div class="card-footer">
             <span v-if="item.hora_salida" class="time-tag">
               <Icon icon="solar:clock-circle-bold" /> {{ item.hora_salida }}
             </span>
+            <button @click="contactar(item.whatsapp)" class="btn-whatsapp">
+              <Icon icon="logos:whatsapp-icon" />
+              WhatsApp
+            </button>
           </div>
-
-          <p v-if="item.whatsapp"><strong>Contacto:</strong> +505 {{ item.whatsapp }}</p>
-          
-          <button @click="contactar(item.whatsapp)" class="btn-detalles">
-            <Icon icon="logos:whatsapp-icon" />
-            Contactar ahora
-          </button>
         </div>
       </div>
     </div>
 
-    <div v-else-if="loading" class="sin-resultados">Cargando rutas...</div>
-    <p v-else class="sin-resultados">No se encontraron rutas disponibles.</p>
+    <div v-else-if="loading" class="status-box">
+      <div class="spinner"></div>
+      <p>Buscando unidades...</p>
+    </div>
+    <div v-else class="status-box">
+      <p>No hay rutas disponibles.</p>
+    </div>
+
+    <div v-if="imagenZoom" class="zoom-overlay" @click="imagenZoom = null">
+      <button class="btn-close-zoom">✕</button>
+      <img :src="imagenZoom" class="img-full" />
+    </div>
   </div>
 </template>
 
@@ -63,7 +70,6 @@ import { ref, computed, onMounted } from "vue";
 import { createClient } from '@supabase/supabase-js';
 import { Icon } from '@iconify/vue';
 
-// CONFIGURACIÓN SUPABASE
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY);
 
 const origen = ref("");
@@ -71,44 +77,34 @@ const destino = ref("");
 const rutas = ref([]);
 const loading = ref(true);
 const favs = ref([]);
+const imagenZoom = ref(null);
 
-// CARGAR DATOS
 const cargarDatos = async () => {
   loading.value = true;
-  const saved = localStorage.getItem('mis_favoritos');
-  if (saved) favs.value = JSON.parse(saved);
+  try {
+    const saved = localStorage.getItem('mis_favoritos');
+    if (saved) favs.value = JSON.parse(saved);
 
-  const { data, error } = await supabase
-    .from('servicios')
-    .select('*')
-    .order('creado_at', { ascending: false });
-  
-  if (!error) rutas.value = data;
-  loading.value = false;
+    const { data: dataServicios } = await supabase.from('servicios').select('*').eq('tipo', 'bus').order('creado_at', { ascending: false });
+    const { data: dataPerfiles } = await supabase.from('perfiles_duenos').select('id, nombre_negocio');
+
+    rutas.value = dataServicios.map(srv => ({
+      ...srv,
+      nombre_negocio: dataPerfiles?.find(p => p.id === srv.dueno_id)?.nombre_negocio || 'Independiente'
+    }));
+  } catch (e) { console.error(e); } 
+  finally { loading.value = false; }
 };
 
-// FILTRADO INTELIGENTE
 const rutasFiltradas = computed(() => {
   const o = origen.value.toLowerCase().trim();
   const d = destino.value.toLowerCase().trim();
-
-  if (!o && !d) return rutas.value;
-
-  return rutas.value.filter(r => {
-    const ro = r.origen.toLowerCase();
-    const rd = (r.destino || "").toLowerCase();
-    const rn = (r.nombre || "").toLowerCase();
-
-    // Filtra por origen, destino o nombre de empresa
-    return ro.includes(o) || rd.includes(o) || rn.includes(o) || rd.includes(d);
-  });
+  return rutas.value.filter(r => (r.origen.toLowerCase().includes(o) || r.nombre_negocio.toLowerCase().includes(o)) && (d ? r.destino?.toLowerCase().includes(d) : true));
 });
 
-// FUNCIONES EXTRA
 const toggleLike = (id) => {
-  const index = favs.value.indexOf(id);
-  if (index > -1) favs.value.splice(index, 1);
-  else favs.value.push(id);
+  const idx = favs.value.indexOf(id);
+  idx > -1 ? favs.value.splice(idx, 1) : favs.value.push(id);
   localStorage.setItem('mis_favoritos', JSON.stringify(favs.value));
 };
 const esFavorito = (id) => favs.value.includes(id);
@@ -118,42 +114,44 @@ onMounted(cargarDatos);
 </script>
 
 <style scoped>
-.home { max-width: 1100px; margin: auto; padding: 24px; background: #f6f7f9; min-height: 100vh; }
+.home { max-width: 900px; margin: auto; padding: 20px; background: #f8fafc; min-height: 100vh; font-family: 'Inter', sans-serif; }
+h1 { text-align: center; font-size: 1.5rem; font-weight: 900; color: #0f172a; margin-bottom: 20px; }
 
-h1 { text-align: center; margin-bottom: 25px; font-size: 26px; font-weight: 800; color: #111827; }
-
-/* INPUTS ESTILO MODERNO */
-.inputs-in-drive { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 600px; margin: 0 auto 30px; }
+/* BUSCADOR */
+.inputs-in-drive { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
 .input-wrapper { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; left: 12px; color: #d19a02; font-size: 1.2rem; }
-.input-in-drive { width: 100%; padding: 14px 14px 14px 40px; border-radius: 12px; border: 1px solid #e5e7eb; outline: none; transition: 0.3s; }
-.input-in-drive:focus { border-color: #d19a02; box-shadow: 0 0 0 4px rgba(209, 154, 2, 0.1); }
+.input-icon { position: absolute; left: 12px; color: #d19a02; }
+.input-in-drive { width: 100%; padding: 12px 12px 12px 38px; border-radius: 12px; border: 1px solid #e2e8f0; outline: none; font-size: 0.9rem; font-weight: 500; }
 
-/* CARDS */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
-.card { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); transition: 0.3s; }
-.card:hover { transform: translateY(-5px); }
+/* CARDS RE DISEÑADAS */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+.card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
 
-.card-image-container { position: relative; height: 180px; }
+.card-image-container { height: 160px; position: relative; cursor: zoom-in; }
 .ruta-img { width: 100%; height: 100%; object-fit: cover; }
-.card-price { position: absolute; bottom: 12px; right: 12px; background: #fff; color: #d19a02; font-weight: 800; padding: 6px 12px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.card-price { position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); color: #0f172a; font-weight: 800; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; }
+.btn-heart { position: absolute; top: 10px; left: 10px; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #cbd5e1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-.btn-heart { position: absolute; top: 12px; left: 12px; background: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #cbd5e1; }
-.is-liked { color: #ef4444 !important; }
+.card-content { padding: 12px; }
+.biz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.empresa-name { font-size: 0.75rem; font-weight: 700; color: #d19a02; text-transform: uppercase; letter-spacing: 0.5px; }
+.type-tag { font-size: 0.6rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #64748b; font-weight: 700; }
 
-.card-header { padding: 15px 20px 5px; }
-.card-header h2 { margin: 0; font-size: 1.1rem; color: #1f2937; }
-.empresa-label { display: block; font-size: 0.85rem; color: #6b7280; font-weight: 400; margin-top: 4px; }
+.ruta-title { font-size: 0.95rem; color: #1e293b; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.arrow { color: #94a3b8; font-size: 0.8rem; }
 
-.card-body { padding: 0 20px 20px; }
-.badge-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
-.type-tag { text-transform: uppercase; font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
-.type-tag.bus { background: #dbeafe; color: #1e40af; }
-.type-tag.taxi { background: #fef9c3; color: #a16207; }
-.type-tag.moto { background: #dcfce7; color: #15803d; }
-.time-tag { font-size: 0.85rem; font-weight: 700; color: #d19a02; display: flex; align-items: center; gap: 4px; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #f1f5f9; }
+.time-tag { font-size: 0.8rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+.btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
-.btn-detalles { margin-top: 15px; width: 100%; padding: 12px; border-radius: 12px; border: none; background: #d19a02; color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+/* ZOOM MODAL */
+.zoom-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.img-full { max-width: 100%; max-height: 80vh; border-radius: 8px; }
+.btn-close-zoom { position: absolute; top: 20px; right: 20px; background: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+
+.status-box { text-align: center; padding: 50px; color: #94a3b8; }
+.spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #d19a02; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 600px) { .inputs-in-drive { grid-template-columns: 1fr; } }
 </style>

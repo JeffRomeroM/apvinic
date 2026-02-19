@@ -51,7 +51,9 @@
           <div class="card-info">
             <span class="type-badge" :class="item.tipo">{{ item.tipo }}</span>
             <h3>{{ item.origen }} <Icon icon="solar:arrow-right-bold" v-if="item.destino" /> {{ item.destino }}</h3>
-            <p class="price">C$ {{ item.precio }}</p>
+            <p v-if="item.tipo !== 'taxi' && item.tipo !== 'moto'" class="price">
+              C$ {{ item.precio }}
+            </p>  
           </div>
           <div class="card-actions">
             <button @click="abrirModalEditar(item)" class="btn-icon edit">
@@ -139,7 +141,7 @@
           </div>
 
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" v-if="tipoServicio === 'bus'">
               <label>Precio (C$)</label>
               <input v-model="form.precio" type="number" placeholder="0.00" />
             </div>
@@ -150,7 +152,7 @@
           </div>
 
           <button @click="guardarServicio" class="btn-submit" :disabled="loading">
-            {{ loading ? 'Guardando...' : 'Publicar Servicio' }}
+            {{ loading ? 'Guardando...' : 'Publicar' }}
           </button>
         </div>
       </div>
@@ -249,7 +251,7 @@ const guardarServicio = async () => {
         tipo: tipoServicio.value, 
         foto_url: url, 
         dueno_id: usuario.value.id,
-        destino: tipoServicio.value === 'bus' ? form.destino : 'Local'
+        destino: tipoServicio.value === 'bus' ? form.destino : ''
     };
     
     const res = editandoId.value 
