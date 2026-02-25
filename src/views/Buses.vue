@@ -10,7 +10,7 @@
           <input 
             v-model="query" 
             type="text" 
-            placeholder="Ej: Estelí, Managua, Central..."
+            placeholder="Ej: Nueva Guinea, Managua, ..."
           />
         </div>
       </div>
@@ -71,6 +71,18 @@
             <span v-if="item.destino" class="arrow">→</span> 
             <span v-if="item.destino">{{ item.destino }}</span>
           </h3>
+          <div class="schedule-section">
+              <div class="time-block" v-if="item.hora_origen">
+                <span class="city">{{ item.origen }}</span>
+                <span class="hour">{{ formatearHora(item.hora_origen) }}</span>
+              </div>
+              <div class="time-divider" v-if="item.hora_destino"></div>
+              <div class="time-block" v-if="item.hora_destino">
+                <span class="city">{{ item.destino }}</span>
+                <span class="hour">{{ formatearHora(item.hora_destino) }}</span>
+              </div>
+              
+          </div>
 
           <div class="card-meta">
             <span v-if="item.hora_salida" class="time-tag">
@@ -179,6 +191,19 @@ const esFavorito = (id) => favs.value.includes(id);
 const contactar = (num) => {
   window.open(`https://wa.me/505${num}`, '_blank');
 };
+const formatearHora = (hora) => {
+  if (!hora) return '';
+  
+  // Dividir horas y minutos
+  let [h, m] = hora.split(':');
+  h = parseInt(h);
+  
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12; // Si es 0, poner 12
+  
+  return `${h}:${m} ${ampm}`;
+};
 
 onMounted(cargarDatos);
 </script>
@@ -213,6 +238,12 @@ onMounted(cargarDatos);
 .card-details { padding: 1.2rem; }
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .empresa-txt { font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0; }
+
+.schedule-section { background: #f8fafc; border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+.time-block { display: flex; flex-direction: column; }
+.time-block .city { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
+.time-block .hour { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+.time-divider { width: 1px; height: 30px; background: #e2e8f0; }
 
 .type-tag { text-transform: uppercase; font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 0.5rem; }
 .type-tag.bus { background: #dbeafe; color: #1e40af; }

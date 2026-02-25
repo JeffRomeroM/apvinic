@@ -1,7 +1,7 @@
 <template>
-  <div class="mobile-header">
+  <div class="mobile-header" :class="{ 'header-hidden': isHidden }">
     <img src="/apvinic_logo.png" alt="Apvinic" class="logo-mobile" />
- 
+   
   </div>
 
   <nav class="navigation-bar">
@@ -11,27 +11,27 @@
 
     <div class="nav-links">
       <RouterLink to="/" class="nav-item">
-        <Icon icon="solar:home-2-bold-duotone" class="nav-icon" />
+        <Icon icon="mdi:home" class="nav-icon" />
         <span class="label">Inicio</span>
       </RouterLink>
 
       <RouterLink to="/rutas" class="nav-item">
-        <Icon icon="solar:bus-bold-duotone" class="nav-icon" />
+        <Icon icon="mdi:bus" class="nav-icon" />
         <span class="label">Servicios</span>
       </RouterLink>
 
       <RouterLink to="/favoritos" class="nav-item">
-        <Icon icon="solar:heart-bold-duotone" class="nav-icon" />
+        <Icon icon="mdi:heart" class="nav-icon" />
         <span class="label">Favoritos</span>
       </RouterLink>
 
       <RouterLink to="/lugares" class="nav-item">
-        <Icon icon="solar:map-point-bold-duotone" class="nav-icon" />
+        <Icon icon="mdi:map-marker" class="nav-icon" />
         <span class="label">Lugares</span>
       </RouterLink>
 
       <RouterLink to="/perfil" class="nav-item">
-        <Icon icon="solar:user-circle-bold-duotone" class="nav-icon" />
+        <Icon icon="mdi:user" class="nav-icon" />
         <span class="label">Perfil</span>
       </RouterLink>
     </div>
@@ -39,12 +39,41 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Icon } from '@iconify/vue'
+
+const isHidden = ref(false)
+let lastScrollPosition = 0
+
+const handleScroll = () => {
+  const currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop
+  
+  // Ignorar scrolls menores para evitar "parpadeos" (umbral de 10px)
+  if (Math.abs(currentScrollPosition - lastScrollPosition) < 10) return
+
+  // Si bajamos, ocultamos. Si subimos, mostramos.
+  // También evitamos que se oculte si estamos muy arriba (top < 60px)
+  if (currentScrollPosition > lastScrollPosition && currentScrollPosition > 60) {
+    isHidden.value = true
+  } else {
+    isHidden.value = false
+  }
+  
+  lastScrollPosition = currentScrollPosition
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped>
-/* --- CONFIGURACIÓN BASE (DESKTOP SIDEBAR) --- */
+/* --- CONFIGURACIÓN BASE --- */
 .navigation-bar {
   --nav-width: 70px;
   --primary: #d19a02;
@@ -64,7 +93,10 @@ import { Icon } from '@iconify/vue'
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mobile-header { display: none; }
+.mobile-header {
+  display: none;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease;
+}
 
 .logo-container {
   display: flex;
@@ -98,11 +130,9 @@ import { Icon } from '@iconify/vue'
   position: relative;
 }
 
-.nav-icon {
-  font-size: 26px;
-}
+.nav-icon { font-size: 26px; }
 
-/* Tooltip para escritorio */
+/* Tooltip Desktop */
 .label {
   position: absolute;
   left: 70px;
@@ -129,23 +159,12 @@ import { Icon } from '@iconify/vue'
   background: rgba(209, 154, 2, 0.08);
 }
 
-/* Estado Activo */
 .router-link-active {
   color: var(--primary);
   background: rgba(209, 154, 2, 0.12);
 }
 
-.router-link-active::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  width: 4px;
-  height: 20px;
-  background: var(--primary);
-  border-radius: 0 4px 4px 0;
-}
-
-/* --- RESPONSIVE (MÓVIL Y TABLET PEQUEÑA) --- */
+/* --- RESPONSIVE MÓVIL --- */
 @media (max-width: 640px) {
   .navigation-bar {
     flex-direction: row;
@@ -157,10 +176,9 @@ import { Icon } from '@iconify/vue'
     justify-content: center;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     border-top: 1px solid #f1f5f9;
+    
   }
-
-  .logo-container { display: none; }
-
+  
   .mobile-header {
     display: flex;
     align-items: center;
@@ -170,10 +188,15 @@ import { Icon } from '@iconify/vue'
     left: 0;
     width: 100%;
     height: 60px;
-    background: transparent;
+    background:transparent !important; /* Sólido para evitar traslapes feos */
     padding: 0 1.5rem;
-    z-index: 999;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    z-index: 1100; /* Por encima de todo */
+  }
+
+  .header-hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+  
   }
 
   .logo-mobile { width: 32px; }
@@ -186,14 +209,7 @@ import { Icon } from '@iconify/vue'
     gap: 0;
   }
 
-  .nav-item {
-    width: 20%;
-    height: 100%;
-    border-radius: 0;
-  }
-
-  .nav-item::before { display: none; }
-
+  .nav-item { width: 20%; height: 100%; border-radius: 0; }
   .nav-icon { font-size: 22px; margin-bottom: 2px; }
 
   .label {
@@ -206,18 +222,8 @@ import { Icon } from '@iconify/vue'
     padding: 0;
     font-weight: 700;
   }
-
-  .router-link-active {
-    background: none;
-    color: var(--primary);
+  .logo-container{
+    display: none;
   }
 }
-
-/* Ajuste para Tablets (ancho medio) */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .navigation-bar {
-    width: 80px;
-  }
-}
-
 </style>

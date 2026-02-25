@@ -2,7 +2,6 @@
   <div class="perfil-container">
     <header class="perfil-header">
       <div class="header-top">
-        
         <div class="user-identity" v-if="usuario">
           <span class="welcome-txt">Hola,</span>
           <h2 class="user-name">{{ usuario.email.split('@')[0] }}</h2>
@@ -51,6 +50,7 @@
           <div class="card-info">
             <span class="type-badge" :class="item.tipo">{{ item.tipo }}</span>
             <h3>{{ item.origen }} <Icon icon="solar:arrow-right-bold" v-if="item.destino" /> {{ item.destino }}</h3>
+            <h4>{{ item.hora_salida}}</h4>
             <p v-if="item.tipo !== 'taxi' && item.tipo !== 'moto'" class="price">
               C$ {{ item.precio }}
             </p>  
@@ -59,7 +59,7 @@
             <button @click="abrirModalEditar(item)" class="btn-icon edit">
               <Icon icon="solar:pen-new-square-bold-duotone" />
             </button>
-            <button @click="abrirConfirmacion(item.id)" class="btn-icon delete">
+            <button @click="abrirConfirmacion(item)" class="btn-icon delete">
               <Icon icon="solar:trash-bin-trash-bold-duotone" />
             </button>
           </div>
@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <div v-if="idABorrar" class="modal-overlay centered">
+    <div v-if="itemABorrar" class="modal-overlay centered">
       <div class="modal-alert">
         <div class="alert-icon danger">
           <Icon icon="solar:danger-bold-duotone" />
@@ -92,7 +92,7 @@
           <button @click="eliminarServicio" class="btn-danger" :disabled="loading">
             {{ loading ? 'Borrando...' : 'Sí, eliminar' }}
           </button>
-          <button @click="idABorrar = null" class="btn-ghost">Cancelar</button>
+          <button @click="itemABorrar = null" class="btn-ghost">Cancelar</button>
         </div>
       </div>
     </div>
@@ -132,11 +132,30 @@
           <div class="form-row">
             <div class="form-group">
               <label>Origen</label>
-              <input v-model="form.origen" placeholder="Ej: Estelí" />
+              <input v-model="form.origen" placeholder="Ej: Nueva Guinea" />
             </div>
             <div class="form-group" v-if="tipoServicio === 'bus'">
               <label>Destino</label>
               <input v-model="form.destino" placeholder="Ej: Managua" />
+            </div>
+            <div class="form-group" v-if="tipoServicio === 'taxi' || tipoServicio === 'moto'">
+              <label>Propietario</label>
+              <input v-model="form.propietario" placeholder="Ej: Jeff" />
+            </div>
+
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label  v-if="tipoServicio === 'bus'">Salida de {{ form.origen || '...' }}</label>
+              <input v-model="form.hora_origen" type="time" v-if="tipoServicio === 'bus'" :disabled="!form.origen || (tipoServicio === 'bus' && !form.destino)"
+              @mousedown="validarCamposPrevios"/>
+              <span v-if="!form.origen" class="error-msg">Escribe el origen primero</span>
+            </div>
+            <div class="form-group" v-if="tipoServicio === 'bus'">
+              <label>Salida de {{ form.destino || '...' }}</label>
+              <input v-model="form.hora_destino" type="time" v-if="tipoServicio === 'bus'" :disabled="!form.origen || !form.destino"
+              @mousedown="validarCamposPrevios"/>
+              <span v-if="!form.destino" class="error-msg">Escribe el destino primero</span>
             </div>
           </div>
 
@@ -157,6 +176,11 @@
         </div>
       </div>
     </div>
+
+    <a href="https://wa.me/50577146128?text=Hola,%20necesito%20ayuda%20con%20mi%20perfil%20de%20transporte" 
+       target="_blank" class="whatsapp-float">
+      <Icon icon="logos:whatsapp-icon" />
+    </a>
   </div>
 </template>
 
@@ -169,79 +193,76 @@ import { Icon } from '@iconify/vue';
 const router = useRouter();
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY);
 
-// Estados de Usuario y UI
 const usuario = ref(null);
 const loading = ref(false);
 const mostrarModal = ref(false);
 const mostrarModalLogout = ref(false);
-const idABorrar = ref(null);
+const itemABorrar = ref(null);
 const servicios = ref([]);
 const editandoId = ref(null);
+const fotoUrlOriginal = ref(null);
 
-// Formulario
 const tipoServicio = ref('bus');
 const fileInput = ref(null);
 const tempImageUrl = ref(null);
 const fotoArchivo = ref(null);
 const form = reactive({ origen: '', destino: '', precio: '', whatsapp: '' });
 
-// Lógica de Autenticación
 const checkAuth = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   usuario.value = user;
   if (user) fetchServicios();
 };
 
-const verificarYCrear = () => {
-  if (!usuario.value) router.push('/login');
-  else abrirModalCrear();
-};
-
-const cerrarSesion = async () => {
-  await supabase.auth.signOut();
-  usuario.value = null;
-  servicios.value = [];
-  mostrarModalLogout.value = false;
-  router.push('/login');
-};
-
-// Lógica de Datos
 const fetchServicios = async () => {
   const { data } = await supabase.from('servicios').select('*').eq('dueno_id', usuario.value.id).order('creado_at', { ascending: false });
   servicios.value = data || [];
 };
 
-const abrirModalCrear = () => {
-  editandoId.value = null;
-  Object.assign(form, { origen: '', destino: '', precio: '', whatsapp: '' });
-  tempImageUrl.value = null;
-  mostrarModal.value = true;
-};
-
-const abrirModalEditar = (item) => {
-  editandoId.value = item.id;
-  tipoServicio.value = item.tipo;
-  Object.assign(form, item);
-  tempImageUrl.value = item.foto_url;
-  mostrarModal.value = true;
-};
-
-const triggerFile = () => fileInput.value.click();
-const handleFile = (e) => {
+const handleFile = async (e) => {
   const file = e.target.files[0];
-  if (file) {
-    fotoArchivo.value = file;
-    tempImageUrl.value = URL.createObjectURL(file);
-  }
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = (event) => {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const maxWidth = 800; 
+      const scale = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        fotoArchivo.value = blob;
+        tempImageUrl.value = URL.createObjectURL(blob);
+      }, 'image/webp', 0.8);
+    };
+  };
+};
+
+const borrarFotoStorage = async (url) => {
+  if (!url || url.includes('placeholder')) return;
+  try {
+    const path = url.split('/fotos_servicios/')[1];
+    if (path) await supabase.storage.from('fotos_servicios').remove([path]);
+  } catch (e) { console.error("Error storage:", e); }
 };
 
 const guardarServicio = async () => {
-  if (!form.origen ) return alert("Completá los campos básicos");
+  if (!form.origen) return alert("El origen es obligatorio");
+  if (tipoServicio.value === 'bus' && (!form.destino || !form.precio)) return alert("Buses requieren destino y precio");
+
   loading.value = true;
   try {
     let url = tempImageUrl.value;
     if (fotoArchivo.value) {
-      const path = `${usuario.value.id}/${Date.now()}`;
+      if (editandoId.value && fotoUrlOriginal.value) await borrarFotoStorage(fotoUrlOriginal.value);
+      const path = `${usuario.value.id}/${Date.now()}.webp`;
       await supabase.storage.from('fotos_servicios').upload(path, fotoArchivo.value);
       url = supabase.storage.from('fotos_servicios').getPublicUrl(path).data.publicUrl;
     }
@@ -251,7 +272,11 @@ const guardarServicio = async () => {
         tipo: tipoServicio.value, 
         foto_url: url, 
         dueno_id: usuario.value.id,
-        destino: tipoServicio.value === 'bus' ? form.destino : ''
+        destino: tipoServicio.value === 'bus' ? form.destino : '',
+        hora_origen: tipoServicio.value === 'bus' ? form.hora_origen : '',
+        hora_destino: tipoServicio.value === 'bus' ? form.hora_destino : '',
+        precio: tipoServicio.value === 'bus' ? form.precio : 0,
+        propietario: ''
     };
     
     const res = editandoId.value 
@@ -265,18 +290,51 @@ const guardarServicio = async () => {
   finally { loading.value = false; }
 };
 
+const abrirConfirmacion = (item) => itemABorrar.value = item;
+
 const eliminarServicio = async () => {
   loading.value = true;
-  await supabase.from('servicios').delete().eq('id', idABorrar.value);
-  idABorrar.value = null;
+  await borrarFotoStorage(itemABorrar.value.foto_url);
+  await supabase.from('servicios').delete().eq('id', itemABorrar.value.id);
+  itemABorrar.value = null;
   loading.value = false;
   fetchServicios();
+};
+
+const verificarYCrear = () => !usuario.value ? router.push('/login') : abrirModalCrear();
+
+const abrirModalCrear = () => {
+  editandoId.value = null;
+  fotoUrlOriginal.value = null;
+  Object.assign(form, { origen: '', destino: '', precio: '', whatsapp: '' });
+  tempImageUrl.value = null;
+  fotoArchivo.value = null;
+  mostrarModal.value = true;
+};
+
+const abrirModalEditar = (item) => {
+  editandoId.value = item.id;
+  fotoUrlOriginal.value = item.foto_url;
+  tipoServicio.value = item.tipo;
+  Object.assign(form, item);
+  tempImageUrl.value = item.foto_url;
+  fotoArchivo.value = null;
+  mostrarModal.value = true;
+};
+
+const triggerFile = () => fileInput.value.click();
+const cerrarSesion = async () => {
+  await supabase.auth.signOut();
+  usuario.value = null;
+  router.push('/login');
 };
 
 const tipoIcono = computed(() => {
   const icons = { bus: 'solar:bus-bold-duotone', taxi: 'solar:automotive-bold-duotone', moto: 'solar:motorbike-bold-duotone' };
   return icons[tipoServicio.value];
 });
+
+
 
 onMounted(checkAuth);
 </script>
@@ -477,7 +535,13 @@ onMounted(checkAuth);
   opacity: 0;
 }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
+.error-msg {
+  color: #ef4444;
+  font-size: 0.65rem;
+  font-weight: bold;
+  margin-top: 4px;
+  display: block;
+}
 .photo-upload {
   height: 150px;
   border: 2px dashed #cbd5e1;
@@ -490,9 +554,9 @@ onMounted(checkAuth);
   width: 100%;
 }
 
-.photo-upload .preview { width: 100%; height: 100%; object-fit: cover; }
-.photo-upload .placeholder { width: 100%; margin-left: 30%; color: var(--gray);  }
-.photo-upload .placeholder span { font-size: 1.2rem; width: 100%; text-align: center; }
+.photo-upload .preview { width: 100%; height: 100%; object-fit: contain; background: #000; }
+.photo-upload .placeholder { width: 100%; text-align: center; color: var(--gray); }
+.photo-upload .placeholder span { font-size: 1.2rem; display: block; margin-top: 5px; }
 
 /* BOTONES */
 .btn-primary, .btn-submit { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 700; width: 100%; font-size: 1rem; }
@@ -506,7 +570,6 @@ onMounted(checkAuth);
 
 input[type="file"]{
   opacity: 0;
-  
 }
 .btn-text {
   background: transparent;
@@ -516,5 +579,22 @@ input[type="file"]{
   padding: 0.8rem;
   font-size: .9rem;
   text-align: left;
+}
+
+/* WHATSAPP FLOAT */
+.whatsapp-float {
+  position: fixed;
+  bottom: 70px;
+  right: 20px;
+  background: #25d366;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 35px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 1001;
 }
 </style>
