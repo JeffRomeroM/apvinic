@@ -7,6 +7,7 @@ import Mandados from '../views/Mandados.vue'
 import Lugares from '../views/Lugares.vue'
 import Login from '../components/Login.vue'
 import Registrarse from '../components/Registrarse.vue'
+import Editlugares from '../components/Editlugares.vue'
 
 
     const routes = [ 
@@ -18,6 +19,7 @@ import Registrarse from '../components/Registrarse.vue'
   { path: '/mandados', name: 'Mandados', component: Mandados },
   { path: '/login', name: 'Login', component: Login },
   { path: '/registrarse', name: 'Registrarse', component: Registrarse },
+  { path: '/editlugares', name: 'Editlugares', component: Editlugares },
   // otras rutas
 ]
 

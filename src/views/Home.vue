@@ -181,7 +181,7 @@ input:focus { border-color: #d19a02; background: white; }
 .time-block .hour { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
 .time-divider { width: 1px; height: 30px; background: #e2e8f0; }
 
-.btn-wa { width: 100%; background: #25d366; color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; }
+.btn-wa { width: 100%; background: #d19a02; color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; }
 
 /* Status */
 .status-view { text-align: center; padding: 4rem 1rem; color: #64748b; }

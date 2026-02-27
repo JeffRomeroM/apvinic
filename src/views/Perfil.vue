@@ -125,22 +125,22 @@
                 <Icon icon="solar:camera-add-bold-duotone" />
                 <span>Tocar para subir</span>
               </div>
-              <input type="file" ref="fileInput" @change="handleFile" hidden accept="image/*" />
+              <input type="file" ref="fileInput" @change="handleFile" hidden accept="image/*" required/>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Origen</label>
-              <input v-model="form.origen" placeholder="Ej: Nueva Guinea" />
+              <input v-model="form.origen" placeholder="Ej: Nueva Guinea" required/>
             </div>
             <div class="form-group" v-if="tipoServicio === 'bus'">
               <label>Destino</label>
-              <input v-model="form.destino" placeholder="Ej: Managua" />
+              <input v-model="form.destino" placeholder="Ej: Managua" required/>
             </div>
             <div class="form-group" v-if="tipoServicio === 'taxi' || tipoServicio === 'moto'">
               <label>Propietario</label>
-              <input v-model="form.propietario" placeholder="Ej: Jeff" />
+              <input v-model="form.propietario" placeholder="Ej: Jeff" required/>
             </div>
 
           </div>
@@ -148,13 +148,13 @@
             <div class="form-group">
               <label  v-if="tipoServicio === 'bus'">Salida de {{ form.origen || '...' }}</label>
               <input v-model="form.hora_origen" type="time" v-if="tipoServicio === 'bus'" :disabled="!form.origen || (tipoServicio === 'bus' && !form.destino)"
-              @mousedown="validarCamposPrevios"/>
+              @mousedown="validarCamposPrevios" required/>
               <span v-if="!form.origen" class="error-msg">Escribe el origen primero</span>
             </div>
             <div class="form-group" v-if="tipoServicio === 'bus'">
               <label>Salida de {{ form.destino || '...' }}</label>
               <input v-model="form.hora_destino" type="time" v-if="tipoServicio === 'bus'" :disabled="!form.origen || !form.destino"
-              @mousedown="validarCamposPrevios"/>
+              @mousedown="validarCamposPrevios" required/>
               <span v-if="!form.destino" class="error-msg">Escribe el destino primero</span>
             </div>
           </div>
@@ -162,11 +162,11 @@
           <div class="form-row">
             <div class="form-group" v-if="tipoServicio === 'bus'">
               <label>Precio (C$)</label>
-              <input v-model="form.precio" type="number" placeholder="0.00" />
+              <input v-model="form.precio" type="number" placeholder="0.00" required/>
             </div>
             <div class="form-group">
               <label>WhatsApp</label>
-              <input v-model="form.whatsapp" type="tel" placeholder="88888888" />
+              <input v-model="form.whatsapp" type="tel" placeholder="88888888" required/>
             </div>
           </div>
 
