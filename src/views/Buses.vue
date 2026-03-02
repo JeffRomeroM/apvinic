@@ -58,7 +58,7 @@
           <div class="card-top">
             <h2 class="empresa-txt"> {{ 
             item.tipo === 'bus' ? 'Transporte ' + item.nombre_negocio :
-            item.tipo === 'taxi' ? 'Taxi ' + item.nombre_negocio :
+            item.tipo === 'taxi' ? item.propietario :
             item.tipo === 'moto' ? 'Motomandados ' + item.nombre_negocio :
             item.nombre_negocio 
           }}

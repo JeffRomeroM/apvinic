@@ -2,8 +2,8 @@
   <div class="fav-manager">
     <header class="manager-header">
       <div class="nav-top">
-       
-        <h1>Mis Guardados</h1>
+      
+        <h1>Mis favoritos</h1>
       </div>
 
       <div class="tabs-container">
@@ -12,7 +12,7 @@
           @click="activeTab = 'rutas'"
         >
           <Icon icon="solar:bus-bold" />
-          <span>Rutas</span>
+          <span>Transporte</span>
         </button>
         <button 
           :class="['tab-link', { active: activeTab === 'lugares' }]" 
@@ -37,9 +37,9 @@
         </div>
 
         <div v-else class="fav-grid">
-          <div v-for="ruta in rutasFav" :key="ruta.id" class="modern-card">
+          <article v-for="ruta in rutasFav" :key="ruta.id" class="modern-card">
             <div class="card-img-box">
-              <img :src="ruta.foto_url" @error="ruta.foto_url = 'https://via.placeholder.com/150'" />
+              <img :src="ruta.foto_url || '/placeholder-bus.png'" />
               <button @click="quitarRuta(ruta.id)" class="btn-heart-fav active">
                 <Icon icon="solar:heart-bold" />
               </button>
@@ -48,39 +48,42 @@
               <span class="type-tag" :class="ruta.tipo">{{ ruta.tipo }}</span>
               <h4 class="route-title">{{ ruta.origen }} <Icon icon="solar:arrow-right-linear" /> {{ ruta.destino }}</h4>
               <p class="price-tag">C$ {{ ruta.precio }}</p>
-                <button class="btn-whatsapp" @click.stop="contactar(item.whatsapp)">
-              <Icon icon="logos:whatsapp-icon" />
-              Contactar
-            </button>
+              <a :href="`https://wa.me/${ruta.whatsapp?.replace(/[^0-9]/g, '')}`" target="_blank" class="btn-whatsapp">
+                <Icon icon="logos:whatsapp-icon" /> Contactar
+              </a>
             </div>
-          </div>
+          </article>
         </div>
       </div>
 
       <div v-if="activeTab === 'lugares'" class="tab-panel">
-        <div v-if="lugaresFav.length === 0" class="empty-state">
+        <div v-if="loading" class="loader-box">
+          <div class="spinner"></div>
+        </div>
+
+        <div v-else-if="lugaresFav.length === 0" class="empty-state">
           <Icon icon="solar:map-point-remove-bold-duotone" />
           <p>Aún no has guardado lugares</p>
+          <button @click="router.push('/lugares')" class="btn-go">Ver guía</button>
         </div>
 
         <div v-else class="fav-grid">
-          <div v-for="lugar in lugaresFav" :key="lugar.id" class="modern-card">
+          <article v-for="lugar in lugaresFav" :key="lugar.id" class="modern-card">
             <div class="card-img-box">
-              <img :src="lugar.imagen" />
+              <img :src="lugar.foto_url || '/placeholder-place.png'" />
               <button @click="quitarLugar(lugar.id)" class="btn-heart-fav active">
                 <Icon icon="solar:heart-bold" />
               </button>
             </div>
             <div class="card-info">
-              <span class="cat-tag">{{ lugar.categoria }}</span>
+              <span class="cat-tag">Destino</span>
               <h4 class="place-title">{{ lugar.nombre }}</h4>
-              <p class="location-txt"><Icon icon="solar:map-point-linear" /> {{ lugar.ubicacion }}</p>
-              <button class="btn-whatsapp" @click.stop="contactar(item.whatsapp)">
-                <Icon icon="logos:whatsapp-icon" />
-                Contactar
-              </button>
+              <p class="location-txt"><Icon icon="solar:map-point-linear" /> {{ lugar.direccion }}</p>
+              <a :href="`https://wa.me/${lugar.celular?.replace(/[^0-9]/g, '')}`" target="_blank" class="btn-whatsapp">
+                <Icon icon="logos:whatsapp-icon" /> Contactar
+              </a>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </main>
@@ -88,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { createClient } from '@supabase/supabase-js';
 import { Icon } from '@iconify/vue';
@@ -99,29 +102,25 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 const activeTab = ref('rutas');
 const loading = ref(false);
 const rutasFav = ref([]);
-const idsLugares = ref([]);
-
-const lugaresData = [
-  { id: 1, nombre: 'Asados El Cañón', categoria: 'restaurante', ubicacion: 'Estelí', imagen: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500' },
-  { id: 2, nombre: 'Hotel Los Pinos', categoria: 'hotel', ubicacion: 'Matagalpa', imagen: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500' },
-  { id: 3, nombre: 'Café de la Montaña', categoria: 'restaurante', ubicacion: 'León', imagen: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500' },
-  { id: 4, nombre: 'Mirador El Crucero', categoria: 'ocio', ubicacion: 'Managua', imagen: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=500' }
-];
-
-const lugaresFav = computed(() => {
-  return lugaresData.filter(lugar => idsLugares.value.includes(lugar.id));
-});
+const lugaresFav = ref([]);
 
 const cargarTodo = async () => {
   loading.value = true;
-  const rutaIds = JSON.parse(localStorage.getItem('mis_favoritos') || '[]');
   
+  // 1. Cargar Rutas (Transporte)
+  const rutaIds = JSON.parse(localStorage.getItem('mis_favoritos') || '[]');
   if (rutaIds.length > 0) {
-    const { data, error } = await supabase.from('servicios').select('*').in('id', rutaIds);
-    if (!error) rutasFav.value = data;
+    const { data: dataR } = await supabase.from('servicios').select('*').in('id', rutaIds);
+    if (dataR) rutasFav.value = dataR;
   }
 
-  idsLugares.value = JSON.parse(localStorage.getItem('guia_favoritos') || '[]');
+  // 2. Cargar Lugares (Guía)
+  const lugarIds = JSON.parse(localStorage.getItem('lugares_favs') || '[]');
+  if (lugarIds.length > 0) {
+    const { data: dataL } = await supabase.from('lugares').select('*').in('id', lugarIds);
+    if (dataL) lugaresFav.value = dataL;
+  }
+
   loading.value = false;
 };
 
@@ -131,8 +130,8 @@ const quitarRuta = (id) => {
 };
 
 const quitarLugar = (id) => {
-  idsLugares.value = idsLugares.value.filter(lId => lId !== id);
-  localStorage.setItem('guia_favoritos', JSON.stringify(idsLugares.value));
+  lugaresFav.value = lugaresFav.value.filter(l => l.id !== id);
+  localStorage.setItem('lugares_favs', JSON.stringify(lugaresFav.value.map(l => l.id)));
 };
 
 onMounted(cargarTodo);
@@ -144,179 +143,46 @@ onMounted(cargarTodo);
   --bg: #f8fafc;
   background: var(--bg);
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
 }
+
 /* BOTÓN WHATSAPP */
 .btn-whatsapp { 
-  width: 100%; background: var(--p); color: white; border: none; 
-  padding: 0.8rem; border-radius: 1rem; font-weight: 700; display: flex; 
-  align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem;
-  transition: opacity 0.2s;
+  width: 100%; background: #25d366; color: white; border: none; 
+  padding: 0.6rem; border-radius: 10px; font-weight: 700; display: flex; 
+  align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.8rem;
+  text-decoration: none; font-size: 0.8rem;
 }
-.btn-whatsapp:active { opacity: 0.8; }
+
 /* HEADER */
-.manager-header {
-  background: white;
-  padding: 1.5rem 1rem 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-}
+.manager-header { background: white; padding: 1rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+.nav-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.btn-back { background: #f1f5f9; border: none; width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.nav-top h1 { font-size: 1.2rem; font-weight: 900; }
 
-.nav-top {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.2rem;
-}
+.tabs-container { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; }
+.tab-link { flex: 1; border: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; color: #64748b; background: transparent; transition: 0.3s; }
+.tab-link.active { background: white; color: var(--p); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
-.btn-back {
-  background: #f1f5f9;
-  border: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1e293b;
-}
-
-.nav-top h1 { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0; }
-
-.tabs-container {
-  display: flex;
-  background: #f1f5f9;
-  padding: 4px;
-  border-radius: 14px;
-}
-
-.tab-link {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #64748b;
-  background: transparent;
-  transition: 0.3s;
-}
-
-.tab-link.active {
-  background: white;
-  color: var(--p);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-/* CONTENT GRID */
+/* GRID */
 .manager-content { padding: 1rem; }
+.fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+.modern-card { background: white; border-radius: 1.2rem; overflow: hidden; border: 1.5px solid #f1f5f9; }
+.card-img-box { position: relative; height: 110px; }
+.card-img-box img { width: 100%; height: 100%; object-fit: cover; }
 
-.fav-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-.modern-card {
-  background: white;
-  border-radius: 1.2rem;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-img-box {
-  position: relative;
-  height: 120px;
-}
-
-.card-img-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.btn-heart-fav {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: white;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  cursor: pointer;
-}
-
-.btn-heart-fav.active { color: #ef4444; }
+.btn-heart-fav { position: absolute; top: 8px; right: 8px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; color: #ef4444; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
 .card-info { padding: 0.8rem; }
+.route-title, .place-title { font-size: 0.85rem; font-weight: 800; margin: 0.4rem 0; color: #0f172a; }
+.type-tag, .cat-tag { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; }
+.cat-tag { background: #fef3c7; color: #92400e; }
+.price-tag { font-weight: 900; color: #16a34a; font-size: 0.8rem; }
+.location-txt { font-size: 0.7rem; color: #64748b; margin: 0; display: flex; align-items: center; gap: 3px; }
 
-.route-title, .place-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin: 0.4rem 0;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.empty-state { text-align: center; padding: 4rem 1rem; color: #94a3b8; }
+.empty-state svg { font-size: 3.5rem; margin-bottom: 1rem; }
+.btn-go { background: var(--p); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 12px; font-weight: 800; margin-top: 1rem; }
 
-.type-tag, .cat-tag {
-  font-size: 0.6rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.type-tag.bus { background: #dbeafe; color: #1e40af; }
-.type-tag.taxi { background: #fef9c3; color: #854d0e; }
-.type-tag.moto { background: #dcfce7; color: #166534; }
-.cat-tag { background: #f1f5f9; color: #475569; }
-
-.price-tag { font-weight: 800; color: #16a34a; font-size: 0.85rem; margin: 0; }
-.location-txt { font-size: 0.75rem; color: #64748b; margin: 0; display: flex; align-items: center; gap: 3px; }
-
-/* STATES */
-.empty-state {
-  text-align: center;
-  padding: 5rem 2rem;
-  color: #94a3b8;
-}
-
-.empty-state svg { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
-
-.btn-go {
-  margin-top: 1rem;
-  background: var(--p);
-  color: white;
-  border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 700;
-}
-
-.loader-box { display: flex; justify-content: center; padding: 4rem; }
-.spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #e2e8f0;
-  border-top-color: var(--p);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
+.spinner { width: 30px; height: 30px; border: 3px solid #f1f5f9; border-top-color: var(--p); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 2rem auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

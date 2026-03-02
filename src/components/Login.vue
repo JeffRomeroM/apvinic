@@ -75,7 +75,7 @@ const handleLogin = async () => {
   }
 
   // Si el login es exitoso, mandamos al dashboard
-  router.push('/rutas')
+  router.push('/perfil')
 }
 </script>
 

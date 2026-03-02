@@ -155,10 +155,10 @@ input:focus { border-color: #d19a02; background: white; }
 
 /* Grid */
 .results-container { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 
 /* Card */
-.card { background: white; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; transition: 0.3s; position: relative; }
+.card { background: white; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; transition: 0.3s; position: relative; margin-right: 5%; }
 .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
 
 .card-media { height: 180px; position: relative; overflow: hidden; cursor: zoom-in; }
