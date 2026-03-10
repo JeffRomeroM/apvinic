@@ -2,16 +2,10 @@
   <div class="search-container">
     <header class="search-header">
       <div class="header-content">
-        <h1>Transporte Local</h1>
-        <p>¿Qué buscas hoy?</p>
-        
+        <p class="welcome-txt">¿Qué buscas hoy?</p>
         <div class="search-bar">
           <Icon icon="solar:magnifer-linear" class="search-icon" />
-          <input 
-            v-model="query" 
-            type="text" 
-            placeholder="Ej: Nueva Guinea, Managua, ..."
-          />
+          <input v-model="query" type="text" placeholder="Ej: Nueva Guinea, Managua, ..." />
         </div>
       </div>
 
@@ -35,70 +29,119 @@
       </div>
 
       <div v-else-if="serviciosFiltrados.length === 0" class="empty-state">
-        <Icon icon="solar:map-point-remove-broken" />
+        <Icon icon="solar:map-point-remove-broken" class="empty-icon" />
         <p>No encontramos servicios que coincidan.</p>
       </div>
 
       <div v-else v-for="item in serviciosFiltrados" :key="item.id" class="feed-card">
-        <div class="card-image">
-          <img :src="item.foto_url" alt="Unidad" loading="lazy" />
-          <div v-if="item.tipo !== 'taxi' && item.tipo !== 'moto'" class="card-price">
-            C$ {{ item.precio }}
-          </div>
-          
-          <button @click.stop="toggleLike(item.id)" class="btn-heart">
-            <Icon 
-              :icon="esFavorito(item.id) ? 'solar:heart-bold' : 'solar:heart-linear'" 
-              :class="{ 'is-liked': esFavorito(item.id) }" 
-            />
+        <div class="card-media" @click="imagenZoom = item.foto_url">
+          <img :src="item.foto_url" class="ruta-img" @error="item.foto_url = 'https://via.placeholder.com/400x200?text=Bus+disponible'" />
+          <div class="price-badge" v-if="item.precio > 0">C$ {{ item.precio }}</div>
+          <button @click.stop="toggleLike(item.id)" class="fav-button">
+            <Icon :icon="esFavorito(item.id) ? 'solar:heart-bold' : 'solar:heart-linear'" :class="{ 'is-liked': esFavorito(item.id) }" />
           </button>
         </div>
-        
-        <div class="card-details">
-          <div class="card-top">
-            <h2 class="empresa-txt"> {{ 
-            item.tipo === 'bus' ? 'Transporte ' + item.nombre_negocio :
-            item.tipo === 'taxi' ? item.propietario :
-            item.tipo === 'moto' ? 'Motomandados ' + item.nombre_negocio :
-            item.nombre_negocio 
-          }}
+
+        <div class="card-body">
+          <div class="owner-info">
+            <span>{{ item.tipo === 'bus' ? 'Transporte' : item.tipo }} {{ item.nombre_negocio }}</span>
+          </div>
+
+          <h2 class="route-name">
+            {{ item.origen }} <Icon v-if="item.destino" icon="solar:arrow-right-outline" /> {{ item.destino }}
           </h2>
-            <span :class="['type-tag', item.tipo]">{{ item.tipo }}</span>
-          </div>
 
-          <h3 class="card-title">
-            {{ item.origen }} 
-            <span v-if="item.destino" class="arrow">→</span> 
-            <span v-if="item.destino">{{ item.destino }}</span>
-          </h3>
-          <div class="schedule-section">
-              <div class="time-block" v-if="item.hora_origen">
-                <span class="city">{{ item.origen }}</span>
-                <span class="hour">{{ formatearHora(item.hora_origen) }}</span>
+          <div class="quick-info">
+            <div class="preview-row">
+              <div class="preview-item">
+                <Icon icon="solar:map-arrow-up-bold" class="icon-up" />
+                <div class="time-box">
+                  <span class="label">{{ item.origen }}</span>
+                  <span class="time">{{ formatearHoras(item.hora_origen)[0] || '--:--' }}</span>
+                </div>
               </div>
-              <div class="time-divider" v-if="item.hora_destino"></div>
-              <div class="time-block" v-if="item.hora_destino">
-                <span class="city">{{ item.destino }}</span>
-                <span class="hour">{{ formatearHora(item.hora_destino) }}</span>
+              <div class="preview-item" v-if="item.hora_destino">
+                <Icon icon="solar:map-arrow-down-bold" class="icon-down" />
+                <div class="time-box">
+                  <span class="label">{{ item.destino }}</span>
+                  <span class="time">{{ formatearHoras(item.hora_destino)[0] || '--:--' }}</span>
+                </div>
               </div>
-              
+            </div>
           </div>
 
-          <div class="card-meta">
-            <span v-if="item.hora_salida" class="time-tag">
-              <Icon icon="solar:clock-circle-bold" /> {{ item.hora_salida }}
-            </span>
-          </div>
-
-          <div class="card-footer">
-            <button class="btn-whatsapp" @click.stop="contactar(item.whatsapp)">
+          <div class="card-actions">
+            <button @click="abrirDetalles(item)" class="btn-more">Ver detalles</button>
+            <button @click="llamar(item.whatsapp)" class="btn-call-icon">
+              <Icon icon="solar:phone-calling-bold" />
+            </button>
+            <button @click="contactar(item.whatsapp)" class="btn-wa-icon">
               <Icon icon="logos:whatsapp-icon" />
-              Contactar
             </button>
           </div>
         </div>
       </div>
     </main>
+
+    <Transition name="slide-up">
+      <div v-if="rutaSeleccionada" class="modal-overlay" @click.self="rutaSeleccionada = null">
+        <div class="detail-modal">
+          <div class="modal-handle"></div>
+          <header class="modal-header">
+            <h3>Detalles del Servicio</h3>
+            <button @click="rutaSeleccionada = null" class="btn-close-modal">✕</button>
+          </header>
+
+          <div class="modal-content">
+            <div class="route-header">
+              <h2>{{ rutaSeleccionada.origen }} <span v-if="rutaSeleccionada.destino">a {{ rutaSeleccionada.destino }}</span></h2>
+              <span class="modal-price">C$ {{ rutaSeleccionada.precio }}</span>
+            </div>
+
+            <div class="detail-section" v-if="rutaSeleccionada.dias">
+              <p class="detail-label">Días de Salida</p>
+              <div class="days-row">
+                <span v-for="dia in ['L', 'M', 'X', 'J', 'V', 'S', 'D']" 
+                  :key="dia" class="day-circle" :class="{ 'active': estaActivo(rutaSeleccionada.dias, dia) }">
+                  {{ dia }}
+                </span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <p class="detail-label">Horarios Disponibles</p>
+              <div class="schedule-box">
+                <div class="group">
+                  <span class="group-title">Desde {{ rutaSeleccionada.origen }}</span>
+                  <div class="chips-wrapper">
+                    <span v-for="h in formatearHoras(rutaSeleccionada.hora_origen)" :key="h" class="h-chip">{{ h }}</span>
+                  </div>
+                </div>
+                <div class="group mt-3" v-if="rutaSeleccionada.hora_destino">
+                  <span class="group-title">Desde {{ rutaSeleccionada.destino }}</span>
+                  <div class="chips-wrapper">
+                    <span v-for="h in formatearHoras(rutaSeleccionada.hora_destino)" :key="h" class="h-chip return">{{ h }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-actions-grid">
+              <button @click="contactar(rutaSeleccionada.whatsapp)" class="btn-wa-full">
+                <Icon icon="logos:whatsapp-icon" /> WhatsApp
+              </button>
+              <button @click="llamar(rutaSeleccionada.whatsapp)" class="btn-call-full">
+                <Icon icon="solar:phone-bold" /> Llamar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <div v-if="imagenZoom" class="zoom-overlay" @click="imagenZoom = null">
+      <img :src="imagenZoom" class="full-img" />
+    </div>
   </div>
 </template>
 
@@ -107,15 +150,15 @@ import { ref, onMounted, computed } from 'vue';
 import { createClient } from '@supabase/supabase-js';
 import { Icon } from '@iconify/vue';
 
-// CONFIGURACIÓN CLIENTE
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY);
 
-// ESTADOS
 const servicios = ref([]);
 const loading = ref(true);
 const query = ref('');
 const filtroTipo = ref('todos');
 const favs = ref([]);
+const imagenZoom = ref(null);
+const rutaSeleccionada = ref(null);
 
 const categorias = [
   { name: 'Todos', value: 'todos', icon: 'solar:globus-linear' },
@@ -124,141 +167,124 @@ const categorias = [
   { name: 'Motos', value: 'moto', icon: 'solar:motorbike-bold' },
 ];
 
-// CARGA DE DATOS (DOS CONSULTAS SEPARADAS)
 const cargarDatos = async () => {
   loading.value = true;
-  
   const saved = localStorage.getItem('mis_favoritos');
   if (saved) favs.value = JSON.parse(saved);
-
   try {
-    // 1. Obtener Servicios
-    const { data: dataServicios, error: errS } = await supabase
-      .from('servicios')
-      .select('*')
-      .order('creado_at', { ascending: false });
-
-    // 2. Obtener Perfiles de Dueños
-    const { data: dataPerfiles, error: errP } = await supabase
-      .from('perfiles_duenos')
-      .select('id, nombre_negocio');
-
-    if (errS) throw errS;
-    if (errP) throw errP;
-
-    // 3. Unión manual usando dueno_id
-    servicios.value = dataServicios.map(srv => {
-      const perfil = dataPerfiles.find(p => p.id === srv.dueno_id);
-      return {
-        ...srv,
-        nombre_negocio: perfil?.nombre_negocio || 'Transporte Independiente'
-      };
-    });
-
-  } catch (e) {
-    console.error("Error cargando datos:", e.message);
-  } finally {
-    loading.value = false;
-  }
+    const { data: srv } = await supabase.from('servicios').select('*').order('creado_at', { ascending: false });
+    const { data: perf } = await supabase.from('perfiles_duenos').select('id, nombre_negocio');
+    servicios.value = srv.map(s => ({
+      ...s,
+      nombre_negocio: perf?.find(p => p.id === s.dueno_id)?.nombre_negocio || 'Independiente'
+    }));
+  } finally { loading.value = false; }
 };
 
-// FILTRADO REACTIVO
 const serviciosFiltrados = computed(() => {
   const term = query.value.toLowerCase().trim();
-  
   return servicios.value.filter(s => {
-    const matchBusqueda = 
-      s.origen.toLowerCase().includes(term) || 
-      (s.destino && s.destino.toLowerCase().includes(term)) ||
-      s.nombre_negocio.toLowerCase().includes(term);
-    
-    const matchTipo = filtroTipo.value === 'todos' || s.tipo === filtroTipo.value;
-    
-    return matchBusqueda && matchTipo;
+    const m = s.origen.toLowerCase().includes(term) || (s.destino && s.destino.toLowerCase().includes(term)) || s.nombre_negocio.toLowerCase().includes(term);
+    const t = filtroTipo.value === 'todos' || s.tipo === filtroTipo.value;
+    return m && t;
   });
 });
 
-// FUNCIONES DE INTERACCIÓN
+const abrirDetalles = (r) => { rutaSeleccionada.value = r; };
+const formatearHoras = (s) => {
+  if (!s) return [];
+  return s.split(',').map(h => {
+    let hc = h.trim();
+    if (!hc.includes(':')) return hc;
+    let [hh, mm] = hc.split(':');
+    hh = parseInt(hh);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12 || 12;
+    return `${hh}:${mm} ${ampm}`;
+  });
+};
+
+const estaActivo = (db, d) => db ? String(db).toUpperCase().split(',').includes(d) : false;
 const toggleLike = (id) => {
-  const index = favs.value.indexOf(id);
-  if (index > -1) favs.value.splice(index, 1);
-  else favs.value.push(id);
+  const idx = favs.value.indexOf(id);
+  idx > -1 ? favs.value.splice(idx, 1) : favs.value.push(id);
   localStorage.setItem('mis_favoritos', JSON.stringify(favs.value));
 };
-
 const esFavorito = (id) => favs.value.includes(id);
-
-const contactar = (num) => {
-  window.open(`https://wa.me/505${num}`, '_blank');
-};
-const formatearHora = (hora) => {
-  if (!hora) return '';
-  
-  // Dividir horas y minutos
-  let [h, m] = hora.split(':');
-  h = parseInt(h);
-  
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  h = h ? h : 12; // Si es 0, poner 12
-  
-  return `${h}:${m} ${ampm}`;
-};
+const contactar = (n) => window.open(`https://wa.me/505${n}`, '_blank');
+const llamar = (n) => window.open(`tel:+505${n}`, '_self');
 
 onMounted(cargarDatos);
 </script>
 
 <style scoped>
-.search-container { --p: #d19a02; --s: #ffffff; background: #f1f5f9; min-height: 100vh; font-family: sans-serif; margin-top: 6vh; border-radius: 2rem; }
+.search-container { --p: #d19a02; background: #f4f7fa; min-height: 100vh; font-family: 'Inter', sans-serif; }
+.search-header { background: var(--p); padding: 2rem 1.5rem 0.5rem; color: white; border-radius: 0 0 2rem 2rem; position: sticky; top: 0; z-index: 50; }
+.welcome-txt { font-size: 0.9rem; font-weight: 500; opacity: 0.9; margin-bottom: 0.5rem; }
+.search-bar { background: white; border-radius: 1.2rem; padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 0.8rem; }
+.search-icon { color: #94a3b8; }
+.search-bar input { border: none; outline: none; width: 100%; font-size: 1rem; }
+.filter-scroll { display: flex; gap: 0.8rem; overflow-x: auto; padding: 1.2rem 0; scrollbar-width: none; }
+.filter-chip { background: rgba(255,255,255,0.15); border: none; color: white; padding: 0.6rem 1.2rem; border-radius: 2rem; white-space: nowrap; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+.filter-chip.active { background: white; color: var(--p); }
 
-/* HEADER */
-.search-header { background: var(--p); padding: 2rem 1.5rem 1rem; color: white; border-radius: 2rem; position: sticky; top: 0; z-index: 50; }
-.header-content h1 { font-size: 1.5rem; margin: 0; font-weight: 800; }
-.header-content p { font-size: 0.9rem; opacity: 0.8; margin: 0.2rem 0 1rem; }
+.results-list { padding: 1.2rem; display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
+.feed-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+.card-media { height: 160px; position: relative; cursor: pointer; }
+.ruta-img { width: 100%; height: 100%; object-fit: cover; }
+.price-badge { position: absolute; top: 12px; right: 12px; background: #1e293b; color: white; padding: 4px 10px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; }
+.fav-button { position: absolute; top: 12px; left: 12px; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; color: #cbd5e1; display: flex; align-items: center; justify-content: center; }
+.is-liked { color: #ef4444; }
 
-.search-bar { background: white; border-radius: 1rem; padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-.search-bar input { border: none; outline: none; width: 100%; font-size: 1rem; color: #1e293b; }
-.search-icon { color: #94a3b8; font-size: 1.2rem; }
+.card-body { padding: 1rem; }
+.owner-info { font-size: 0.65rem; color: var(--p); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+.route-name { font-size: 1rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.quick-info { background: #f8fafc; padding: 12px; border-radius: 16px; margin-bottom: 15px; }
+.preview-row { display: flex; justify-content: space-between; gap: 10px; }
+.preview-item { display: flex; align-items: center; gap: 8px; flex: 1; }
+.time-box { display: flex; flex-direction: column; }
+.time-box .label { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; }
+.time-box .time { font-size: 0.85rem; font-weight: 800; color: #1e293b; }
+.icon-up { color: #10b981; }
+.icon-down { color: var(--p); }
 
-/* FILTROS */
-.filter-scroll { display: flex; gap: 0.8rem; overflow-x: auto; padding: 1.5rem 0 0.5rem; scrollbar-width: none; }
-.filter-chip { background: rgba(255,255,255,0.1); border: none; color: white; padding: 0.6rem 1.2rem; border-radius: 2rem; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
-.filter-chip.active { background: var(--s); color: var(--p); }
+.card-actions { display: flex; gap: 8px; }
+.btn-more { flex: 1; background: #1e293b; color: white; border: none; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; }
+.btn-wa-icon { background: #e8f5e9; padding: 10px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.btn-call-icon { background: #f1f5f9; padding: 10px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #1e293b; }
 
-/* CARDS */
-.results-list { padding: 1.5rem; display: grid; gap: 1.2rem; }
-.feed-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.card-image { height: 160px; position: relative; }
-.card-image img { width: 100%; height: 100%; object-fit: cover; }
-.card-price { position: absolute; bottom: 1rem; right: 1rem; background: var(--s); color: var(--p); font-weight: 900; padding: 0.4rem 0.8rem; border-radius: 0.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+/* MODAL GRID */
+.modal-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+.btn-wa-full { background: #25d366; color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-call-full { background: var(--p); color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-.btn-heart { position: absolute; top: 1rem; left: 1rem; background: white; border: none; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #cbd5e1; cursor: pointer; }
-.is-liked { color: #ef4444 !important; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: flex-end; }
+.detail-modal { background: white; width: 100%; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 85vh; overflow-y: auto; }
+.modal-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: 0 auto 1.5rem; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.modal-header h3 { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; }
+.btn-close-modal { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; }
 
-.card-details { padding: 1.2rem; }
-.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-.empresa-txt { font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0; }
+.route-header { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+.route-header h2 { font-size: 1.2rem; font-weight: 900; margin: 0; }
+.modal-price { background: var(--p); color: white; padding: 4px 12px; border-radius: 10px; font-weight: 800; }
 
-.schedule-section { background: #f8fafc; border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
-.time-block { display: flex; flex-direction: column; }
-.time-block .city { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
-.time-block .hour { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
-.time-divider { width: 1px; height: 30px; background: #e2e8f0; }
+.detail-section { margin-bottom: 1.5rem; }
+.detail-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; }
+.days-row { display: flex; justify-content: space-between; }
+.day-circle { width: 35px; height: 35px; border-radius: 50%; background: #f8fafc; color: #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; border: 1.5px solid #f1f5f9; }
+.day-circle.active { background: var(--p); color: white; border-color: var(--p); }
 
-.type-tag { text-transform: uppercase; font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 0.5rem; }
-.type-tag.bus { background: #dbeafe; color: #1e40af; }
-.type-tag.taxi { background: #fef9c3; color: #a16207; }
-.type-tag.moto { background: #dcfce7; color: #15803d; }
+.schedule-box { background: #f8fafc; border-radius: 1.5rem; padding: 1.2rem; }
+.group-title { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px; }
+.chips-wrapper { display: flex; flex-wrap: wrap; gap: 8px; }
+.h-chip { background: #1e293b; color: white; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; }
+.h-chip.return { background: white; color: #1e293b; border: 2px solid #1e293b; }
 
-.card-title { font-size: 0.95rem; color: #64748b; margin: 0.3rem 0; font-weight: 500; }
-.time-tag { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--p); font-weight: 700; margin-top: 0.4rem; }
-
-.btn-whatsapp { width: 100%; background: var(--p); color: white; border: none; padding: 0.8rem; border-radius: 1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
-
-.status-msg { text-align: center; padding: 3rem; color: #64748b; }
-.spinner { width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: var(--p); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+.zoom-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; }
+.full-img { max-width: 90%; max-height: 80vh; border-radius: 1rem; }
+.spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state { text-align: center; padding: 3rem; color: #94a3b8; font-size: 2.5rem; }
-.empty-state p { font-size: 1rem; margin-top: 0.5rem; color: #64748b; }
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.4s ease; }
+.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
 </style>

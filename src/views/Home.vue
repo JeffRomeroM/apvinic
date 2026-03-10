@@ -56,7 +56,10 @@
 
             <div class="card-actions">
               <button @click="abrirDetalles(item)" class="btn-more">
-                Ver detalles y horarios
+                Ver detalles
+              </button>
+              <button @click="llamar(item.whatsapp)" class="btn-call-icon">
+                <Icon icon="solar:phone-calling-bold" />
               </button>
               <button @click="contactar(item.whatsapp)" class="btn-wa-icon">
                 <Icon icon="logos:whatsapp-icon" />
@@ -89,7 +92,7 @@
               <span class="modal-price">C$ {{ rutaSeleccionada.precio }}</span>
             </div>
 
-            <div class="detail-section">
+            <div class="detail-section" v-if="rutaSeleccionada.dias">
               <p class="detail-label">Días de Salida</p>
               <div class="days-row">
                 <span v-for="dia in ['L', 'M', 'X', 'J', 'V', 'S', 'D']" 
@@ -122,9 +125,14 @@
               </div>
             </div>
 
-            <button @click="contactar(rutaSeleccionada.whatsapp)" class="btn-wa-full">
-              <Icon icon="logos:whatsapp-icon" /> Contactar por WhatsApp
-            </button>
+            <div class="modal-actions-grid">
+              <button @click="contactar(rutaSeleccionada.whatsapp)" class="btn-wa-full">
+                <Icon icon="logos:whatsapp-icon" /> WhatsApp
+              </button>
+              <button @click="llamar(rutaSeleccionada.whatsapp)" class="btn-call-full">
+                <Icon icon="solar:phone-bold" /> Llamar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,9 +159,7 @@ const favs = ref([]);
 const imagenZoom = ref(null);
 const rutaSeleccionada = ref(null);
 
-const abrirDetalles = (ruta) => {
-  rutaSeleccionada.value = ruta;
-};
+const abrirDetalles = (ruta) => { rutaSeleccionada.value = ruta; };
 
 const formatearHoras = (horasString) => {
   if (!horasString) return [];
@@ -187,16 +193,12 @@ const cargarDatos = async () => {
   } finally { loading.value = false; }
 };
 
-// FILTRO CRÍTICO: Excluye taxis y mototaxis
 const rutasFiltradas = computed(() => {
   const o = origen.value.toLowerCase().trim();
   const d = destino.value.toLowerCase().trim();
-  
   return rutas.value.filter(r => {
     const tipo = (r.tipo || '').toLowerCase();
-    // Solo permite rutas que NO sean taxi ni mototaxi
     const esRutaValida = !tipo.includes('taxi') && !tipo.includes('moto');
-    
     return esRutaValida &&
       (r.origen.toLowerCase().includes(o) || r.nombre_negocio.toLowerCase().includes(o)) && 
       (d ? r.destino?.toLowerCase().includes(d) : true);
@@ -210,14 +212,14 @@ const toggleLike = (id) => {
 };
 const esFavorito = (id) => favs.value.includes(id);
 const contactar = (num) => window.open(`https://wa.me/505${num}`, '_blank');
+const llamar = (num) => window.open(`tel:+505${num}`, '_self');
 
 onMounted(cargarDatos);
 </script>
 
 <style scoped>
+/* (Estilos anteriores se mantienen, añado/ajusto los de los botones) */
 .home { background: #f4f7fa; min-height: 100vh; font-family: 'Inter', sans-serif; padding-bottom: 50px; }
-
-/* HEADER */
 .search-header { background: white; padding: 1.5rem 1rem; border-radius: 0 0 2rem 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 h1 { font-weight: 800; text-align: center; margin-bottom: 1rem; font-size: 1.4rem; color: #1e293b; }
 .search-box { display: flex; flex-direction: column; gap: 8px; max-width: 450px; margin: 0 auto; }
@@ -225,11 +227,9 @@ h1 { font-weight: 800; text-align: center; margin-bottom: 1rem; font-size: 1.4re
 .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #d19a02; }
 input { width: 100%; padding: 12px 12px 12px 42px; border-radius: 14px; border: 1.5px solid #e2e8f0; outline: none; background: #f8fafc; }
 
-/* GRID DE CARDS CENTRADAS */
 .results-container { padding: 1.2rem; max-width: 500px; margin: 0 auto; }
 .cards-grid { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-
-.card { background: white; border-radius: 20px; overflow: hidden; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); }
+.card { background: white; border-radius: 20px; overflow: hidden; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); }
 
 .card-media { height: 160px; position: relative; cursor: pointer; }
 .ruta-img { width: 100%; height: 100%; object-fit: cover; }
@@ -241,56 +241,53 @@ input { width: 100%; padding: 12px 12px 12px 42px; border-radius: 14px; border: 
 .owner-info { font-size: 0.65rem; color: #d19a02; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
 .route-name { font-size: 1rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 
-/* VISTA PREVIA MEJORADA */
 .quick-info { background: #f8fafc; padding: 12px; border-radius: 16px; margin-bottom: 15px; }
 .preview-row { display: flex; justify-content: space-between; gap: 10px; }
 .preview-item { display: flex; align-items: center; gap: 8px; flex: 1; }
 .time-box { display: flex; flex-direction: column; }
-.time-box .label { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; line-height: 1; margin-bottom: 2px; }
+.time-box .label { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; }
 .time-box .time { font-size: 0.85rem; font-weight: 800; color: #1e293b; }
+.icon-up { color: #10b981; }
+.icon-down { color: #d19a02; }
 
-.icon-up { color: #10b981; font-size: 1.2rem; }
-.icon-down { color: #d19a02; font-size: 1.2rem; }
-
-.card-actions { display: flex; gap: 10px; }
-.btn-more { flex: 1; background: #1e293b; color: white; border: none; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+/* ACCIONES DE LA CARD */
+.card-actions { display: flex; gap: 8px; }
+.btn-more { flex: 1; background: #1e293b; color: white; border: none; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; }
 .btn-wa-icon { background: #e8f5e9; padding: 10px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.btn-call-icon { background: #f1f5f9; padding: 10px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #1e293b; }
 
-/* MODAL / BOTTOM SHEET */
+/* MODAL Y BOTONES FULL */
+.modal-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+.btn-wa-full { background: #25d366; color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+.btn-call-full { background: #d19a02; color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: flex-end; }
 .detail-modal { background: white; width: 100%; border-radius: 2rem 2rem 0 0; padding: 1.5rem; max-height: 85vh; overflow-y: auto; }
 .modal-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: 0 auto 1.5rem; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-.modal-header h3 { font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-.btn-close-modal { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; }
+.modal-header h3 { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; }
+.btn-close-modal { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; }
 
-.route-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-.route-header h2 { font-size: 1.2rem; font-weight: 900; color: #1e293b; flex: 1; margin: 0; }
-.modal-price { background: #d19a02; color: white; padding: 4px 12px; border-radius: 10px; font-weight: 800; font-size: 1rem; }
+.route-header { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+.route-header h2 { font-size: 1.2rem; font-weight: 900; margin: 0; color: #1e293b; }
+.modal-price { background: #d19a02; color: white; padding: 4px 12px; border-radius: 10px; font-weight: 800; }
 
 .detail-section { margin-bottom: 1.5rem; }
 .detail-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; }
-
 .days-row { display: flex; justify-content: space-between; }
 .day-circle { width: 35px; height: 35px; border-radius: 50%; background: #f8fafc; color: #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; border: 1.5px solid #f1f5f9; }
 .day-circle.active { background: #d19a02; color: white; border-color: #d19a02; }
 
 .schedule-box { background: #f8fafc; border-radius: 1.5rem; padding: 1.2rem; }
-.group-title { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 10px; }
+.group-title { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px; }
 .chips-wrapper { display: flex; flex-wrap: wrap; gap: 8px; }
-.h-chip { background: #1e293b; color: white; padding: 6px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 800; }
+.h-chip { background: #1e293b; color: white; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; }
 .h-chip.return { background: white; color: #1e293b; border: 2px solid #1e293b; }
-
-.btn-wa-full { width: 100%; background: #25d366; color: white; border: none; padding: 1rem; border-radius: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1rem; margin-top: 1rem; }
-
-/* ANIMACIONES */
-.slide-up-enter-active, .slide-up-leave-active { transition: all 0.4s ease; }
-.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
-
-.status-view { text-align: center; padding: 3rem; color: #64748b; }
-.spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #d19a02; border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .zoom-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; }
 .full-img { max-width: 90%; max-height: 80vh; border-radius: 1rem; }
+.spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #d19a02; border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.4s ease; }
+.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
 </style>
